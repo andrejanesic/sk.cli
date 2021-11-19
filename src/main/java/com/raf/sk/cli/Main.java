@@ -3,6 +3,9 @@ package com.raf.sk.cli;
 import com.raf.sk.core.actions.*;
 import com.raf.sk.core.core.Core;
 import com.raf.sk.core.exceptions.IActionInsufficientPrivilegeException;
+import com.raf.sk.core.exceptions.IActionUndoImpossibleException;
+import com.raf.sk.core.exceptions.IComponentNotInitializedException;
+import com.raf.sk.core.exceptions.IUserInitNotExistsException;
 
 import java.util.Scanner;
 
@@ -72,31 +75,7 @@ public class Main {
 
                 try {
                     switch (args[0]) {
-                        case "addLimit":
-                            // #TODO
-                            break;
-                        case "addUser":
-                            // #TODO
-                            break;
-                        case "cd":
-                            // #TODO changeCwd
-                            break;
-                        case "logout":
-                            // #TODO deinitUser
-                            break;
-                        case "deleteLimit":
-                            // #TODO
-                            break;
-                        case "deleteUser":
-                            // #TODO
-                            break;
-                        case "getLimits":
-                            // #TODO
-                            break;
-                        case "grant":
-                            // #TODO grantPrivilege
-                            break;
-                        case "init":
+                        case "init": {
                             IAction initConfig;
                             if (args.length < 3) {
                                 System.out.println("These arguments are required: \"username\", \"password\"");
@@ -125,6 +104,74 @@ public class Main {
                             System.out.println("[3/3] Tree loaded...");
                             System.out.println("Storage ready!");
                             break;
+                        }
+
+                        case "addLimit":
+                            // #TODO
+                            break;
+                        case "cd":
+                            // #TODO changeCwd
+                            break;
+
+                        /* --- USER --- */
+                        case "login": {
+                            if (args.length < 3) {
+                                System.out.println("These arguments are required: \"username\", \"password\"");
+                                break;
+                            }
+                            IAction initUser = new ActionInitUser(args[1], args[2]);
+                            am.addAction(initUser);
+                            am.run();
+                            System.out.println("User logged in.");
+                            break;
+                        }
+
+                        case "register": {
+                            if (args.length < 3) {
+                                System.out.println("These arguments are required: \"username\", \"password\"");
+                                break;
+                            }
+                            IAction addUser = new ActionAddUser(args[1], args[2]);
+                            am.addAction(addUser);
+                            am.run();
+                            System.out.println("User \"" + args[1] + "\" added.");
+                            break;
+                        }
+
+                        case "remove": {
+                            if (args.length < 2) {
+                                System.out.println("These arguments are required: \"username\".");
+                                break;
+                            }
+                            IAction removeUser = new ActionDeleteUser(args[1]);
+                            am.addAction(removeUser);
+                            am.run();
+                            System.out.println("User \"" + args[1] + "\" removed.");
+                            break;
+                        }
+
+                        case "logout": {
+                            IAction deinitUser = new ActionDeinitUser();
+                            am.addAction(deinitUser);
+                            am.run();
+                            System.out.println("User logged out.");
+                            break;
+                        }
+
+                        /* --- PRIVILEGES --- */
+
+                        case "deleteLimit":
+                            // #TODO
+                            break;
+                        case "deleteUser":
+                            // #TODO
+                            break;
+                        case "getLimits":
+                            // #TODO
+                            break;
+                        case "grant":
+                            // #TODO grantPrivilege
+                            break;
                         case "nodeAdd":
                             // #TODO
                             break;
@@ -146,24 +193,28 @@ public class Main {
                         case "help":
                             System.out.println(
                                     "Available commands:\n" +
-                                            "\tinit username password - Initialize the storage;\n" +
-                                            "\tcd dir - Change current working directory.\n" +
-                                            "\t--- USER ---\n" +
-                                            "\taddUser username password - Add new user\n" +
-                                            "\tdeleteUser username - Delete existing user\n" +
-                                            "\tlogout - Log out\n" +
-                                            "\t--- PRIVILEGES ---\n" +
-                                            "\tgrant username privilege [object] - Grant privilege \"privilege\" to" +
-                                            " user \"username\". Optionally, refer to [object]" +
-                                            "\trevoke username privilege [object] - Revoke existing privilege from " +
-                                            "user. Optionally, refer to [object]" +
-                                            "\t--- STORAGE ---\n" +
-                                            "\t"
+                                            "--- STARTUP ---\n" +
+                                            "init username password - Initialize the storage;\n" +
+                                            "\n--- USER ---\n" +
+                                            "login username password - Log in as an existing user\n" +
+                                            "logout - Log out\n" +
+                                            "register username password - Add new user\n" +
+                                            "remove username - Delete existing user\n" +
+                                            "\n--- PRIVILEGES ---\n" +
+                                            "grant username privilege [object] - Grant privilege \"privilege\" to" +
+                                            " user \"username\". Optionally, refer to [object]\n" +
+                                            "revoke username privilege [object] - Revoke existing privilege from " +
+                                            "user. Optionally, refer to [object]\n" +
+                                            "\n--- STORAGE ---\n" +
+                                            "cd path - Change current working directory to \"path\" (relative or" +
+                                            "absolute path.)\n" +
+                                            "\n--- OTHER ---\n" +
+                                            "help - Print this menu.\n" +
+                                            "exit - Quit the program."
                             );
+                            break;
                         case "exit":
-                            System.out.println(
-                                    "Doviđenja!"
-                            );
+                            System.out.println("Bye!");
                             System.exit(0);
                             break;
                         default:
@@ -172,8 +223,12 @@ public class Main {
                             );
                             break;
                     }
-                } catch (IActionInsufficientPrivilegeException e) {
-                    System.out.println(e.getMessage());
+                } catch (
+                        IActionInsufficientPrivilegeException |
+                                IActionUndoImpossibleException |
+                                IComponentNotInitializedException |
+                                IUserInitNotExistsException e) {
+                    System.out.println("Error: " + e.getMessage());
                 } catch (Throwable t) {
                     t.printStackTrace();
                 }
