@@ -3,6 +3,9 @@ package com.raf.sk.cli;
 import com.raf.sk.core.actions.*;
 import com.raf.sk.core.core.Core;
 import com.raf.sk.core.exceptions.*;
+import com.raf.sk.core.repository.Directory;
+import com.raf.sk.core.repository.INode;
+import com.raf.sk.core.repository.INodeType;
 import com.raf.sk.core.user.IPrivilege;
 import com.raf.sk.core.user.IUser;
 
@@ -97,20 +100,13 @@ public class Main {
 
                         // konačno, učitaj storage
                         IAction initStorage;
-                        initStorage = new ActionInitStorage(cwd);
+                        initStorage = new ActionInitStorage();
                         am.addAction(initStorage);
                         am.run();
                         System.out.println("[3/3] Tree loaded...");
                         System.out.println("Storage ready!");
                         break;
                     }
-
-                    case "addLimit":
-                        // #TODO
-                        break;
-                    case "cd":
-                        // #TODO changeCwd
-                        break;
 
                     /* --- USER --- */
                     case "login": {
@@ -159,6 +155,7 @@ public class Main {
 
                     case "users": {
                         IAction getUsers = new ActionGetUsers();
+                        //noinspection unchecked
                         Collection<IUser> users = (Collection<IUser>) getUsers.run();
                         if (users == null) {
                             throw new RuntimeException("Couldn't retrieve users.");
@@ -219,6 +216,48 @@ public class Main {
                         break;
                     }
 
+                    /* --- STORAGE --- */
+                    case "cd": {
+                        if (args.length < 2) {
+                            System.out.println("These arguments are required: \"path\".");
+                            break;
+                        }
+                        IAction actionChangeCwd = new ActionChangeCwd(args[1]);
+                        am.addAction(actionChangeCwd);
+                        am.run();
+                        break;
+                    }
+
+                    case "ls":
+                    case "dir": {
+                        IAction actionListDirectory;
+                        if (args.length < 2)
+                            actionListDirectory = new ActionListDirectory(".");
+                        else
+                            actionListDirectory = new ActionListDirectory(args[1]);
+                        am.addAction(actionListDirectory);
+                        INode n = (INode) am.run();
+                        if (n.getType().equals(INodeType.DIRECTORY)) {
+                            if (((Directory) n).getChildren().size() == 0) {
+                                System.out.println("Empty directory.");
+                                break;
+                            }
+                            for (INode c : ((Directory) n).getChildren()) {
+                                System.out.print(c.getName());
+                                if (c.getType().equals(INodeType.DIRECTORY))
+                                    System.out.print("/");
+                                System.out.print("\n");
+                            }
+                        } else {
+                            System.out.println(n.getName());
+                        }
+                        break;
+                    }
+
+                    case "addLimit":
+                        // #TODO
+                        break;
+
                     case "deleteLimit":
                         // #TODO
                         break;
@@ -247,24 +286,25 @@ public class Main {
                         System.out.println(
                                 "Available commands:\n" +
                                         "--- STARTUP ---\n" +
-                                        "init username password - Initialize the storage\n" +
+                                        "init username password - Initialize the storage.\n" +
                                         "\n--- USER ---\n" +
-                                        "login username password - Log in as an existing user\n" +
-                                        "logout - Log out\n" +
-                                        "users - Shows all existing users\n" +
-                                        "register username password - Add new user\n" +
-                                        "deregister username - Delete existing user\n" +
+                                        "login username password - Log in as an existing user.\n" +
+                                        "logout - Log out.\n" +
+                                        "users - Shows all existing users.\n" +
+                                        "register username password - Add new user.\n" +
+                                        "deregister username - Delete existing user.\n" +
                                         "\n--- PRIVILEGES ---\n" +
                                         "grant username privilege [object] - Grant privilege \"privilege\" to" +
-                                        " user \"username\". Optionally, refer to [object]\n" +
+                                        " user \"username\". Optionally, refer to [object].\n" +
                                         "revoke username privilege [object] - Revoke existing privilege from " +
-                                        "user. Optionally, refer to [object]\n" +
+                                        "user. Optionally, refer to [object].\n" +
                                         "\n--- STORAGE ---\n" +
-                                        "cd path - Change current working directory to \"path\" (relative or" +
-                                        "absolute path.)\n" +
+                                        "cd path - Change current working directory to \"path\".\n" +
+                                        "ls [path] - List contents of the directory. Optionally on \"path\".\n" +
+                                        "dir [path] - Equivalent to ls.\n" +
                                         "\n--- OTHER ---\n" +
-                                        "help - Print this menu\n" +
-                                        "exit - Quit the program"
+                                        "help - Print this menu.\n" +
+                                        "exit - Quit the program."
                         );
                         break;
                     case "exit":
@@ -286,7 +326,8 @@ public class Main {
                             IUserDeleteNotExistException |
                             IActionBadParameterException |
                             IUserCannotDeleteCurrentUserException |
-                            IUserDuplicateUsernameException
+                            IUserDuplicateUsernameException |
+                            DirectoryInvalidPathException
                             e) {
                 System.out.println("Error: " + e.getMessage());
             } catch (Throwable t) {
