@@ -270,9 +270,17 @@ public class Main {
                     case "nodeAdd":
                         // #TODO
                         break;
-                    case "nodeDelete":
-                        // #TODO
+                    case "del": {
+                        if (args.length < 2) {
+                            System.out.println("These arguments are required: \"path\".");
+                            break;
+                        }
+                        IAction deleteNode = new ActionINodeDelete(args[1]);
+                        am.addAction(deleteNode);
+                        am.run();
+                        System.out.println("Node deleted.");
                         break;
+                    }
                     case "nodeDownload":
                         // #TODO
                         break;
@@ -302,6 +310,7 @@ public class Main {
                                         "cd path - Change current working directory to \"path\".\n" +
                                         "ls [path] - List contents of the directory. Optionally on \"path\".\n" +
                                         "dir [path] - Equivalent to ls.\n" +
+                                        "del path - Deletes the specified node.\n" +
                                         "\n--- OTHER ---\n" +
                                         "help - Print this menu.\n" +
                                         "exit - Quit the program."
