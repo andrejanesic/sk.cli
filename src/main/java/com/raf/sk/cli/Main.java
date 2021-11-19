@@ -254,6 +254,70 @@ public class Main {
                         break;
                     }
 
+                    case "mkdir":
+                    case "touch":
+                        if (args.length < 2) {
+                            System.out.println("These arguments are required: \"name\".");
+                            break;
+                        }
+
+                        String type = args[0].equals("mkdir") ? "DIR" : "FILE";
+                        IAction addNode = new ActionINodeAdd(args[1], type);
+                        am.addAction(addNode);
+                        am.run();
+                        System.out.println("Node added.");
+                        break;
+
+                    case "rm": {
+                        if (args.length < 2) {
+                            System.out.println("These arguments are required: \"path\".");
+                            break;
+                        }
+                        IAction deleteNode = new ActionINodeDelete(args[1]);
+                        am.addAction(deleteNode);
+                        am.run();
+                        System.out.println("Node deleted.");
+                        break;
+                    }
+
+                    case "mv": {
+                        if (args.length < 3) {
+                            System.out.println("These arguments are required: \"target\", \"dest\".");
+                            break;
+                        }
+                        IAction moveNode = new ActionINodeMove(args[1], args[2]);
+                        am.addAction(moveNode);
+                        am.run();
+                        System.out.println("Node moved.");
+                        break;
+                    }
+
+                    case "dl": {
+                        if (args.length < 3) {
+                            System.out.println("These arguments are required: \"target\", \"dest\".");
+                            break;
+                        }
+                        IAction downloadNode = new ActionINodeDownload(args[1], args[2]);
+                        am.addAction(downloadNode);
+                        am.run();
+                        System.out.println("Node downloaded.");
+                        break;
+                    }
+
+                    case "upl": {
+                        if (args.length < 3) {
+                            System.out.println("These arguments are required: \"target\", \"source\".");
+                            break;
+                        }
+                        IAction uploadNode = new ActionINodeUpload(args[1], args[2]);
+                        am.addAction(uploadNode);
+                        am.run();
+                        System.out.println("Node uploaded.");
+                        break;
+                    }
+
+                    /* --- LIMITS --- */
+
                     case "addLimit":
                         // #TODO
                         break;
@@ -267,37 +331,9 @@ public class Main {
                     case "getLimits":
                         // #TODO
                         break;
-                    case "nodeAdd":
-                        // #TODO
-                        break;
-                    case "rm": {
-                        if (args.length < 2) {
-                            System.out.println("These arguments are required: \"path\".");
-                            break;
-                        }
-                        IAction deleteNode = new ActionINodeDelete(args[1]);
-                        am.addAction(deleteNode);
-                        am.run();
-                        System.out.println("Node deleted.");
-                        break;
-                    }
-                    case "nodeDownload":
-                        // #TODO
-                        break;
-                    case "mv": {
-                        if (args.length < 3) {
-                            System.out.println("These arguments are required: \"target\", \"dest\".");
-                            break;
-                        }
-                        IAction moveNode = new ActionINodeMove(args[1], args[2]);
-                        am.addAction(moveNode);
-                        am.run();
-                        System.out.println("Node moved.");
-                        break;
-                    }
-                    case "nodeUpload":
-                        // #TODO
-                        break;
+
+                    /* --- OTHER --- */
+
                     case "help":
                         System.out.println(
                                 "Available commands:\n" +
@@ -318,17 +354,26 @@ public class Main {
                                         "cd path - Change current working directory to \"path\".\n" +
                                         "ls [path] - List contents of the directory. Optionally on \"path\".\n" +
                                         "dir [path] - Equivalent to ls.\n" +
-                                        "del path - Deletes the specified node.\n" +
+                                        "mkdir name - Creates a new directory in the current folder.\n" +
+                                        "touch name - Creates a new file in the current folder.\n" +
+                                        "mv source dest - Moves the file or directory on source into directory on " +
+                                        "dest.\n" +
+                                        "dl target dest - Downloads file or directory on target into OS dest " +
+                                        "directory.\n" +
+                                        "upl dest target - Uploads file on OS target path onto local dest path.\n" +
+                                        "rm path - Deletes the specified node.\n" +
                                         "\n--- OTHER ---\n" +
                                         "help - Print this menu.\n" +
                                         "exit - Quit the program."
                         );
                         break;
+
                     case "exit":
                         System.out.println("Bye!");
                         sc.close();
                         System.exit(0);
                         break;
+
                     default:
                         System.out.println(
                                 "Invalid operation. Please try again."
@@ -350,7 +395,19 @@ public class Main {
             } catch (Throwable t) {
                 t.printStackTrace();
             }
-            System.out.print("> ");
+
+            //noinspection ConstantConditions
+            if (
+                    Core.getInstance().ConfigManager().getConfig() != null &&
+                            Core.getInstance().StorageManager().getRoot() != null &&
+                            Core.getInstance().UserManager().getUser() != null &&
+                            Core.getInstance().UserManager().getUser().isAuthenticated() &&
+                            Core.getInstance().UserManager().getUser().getCwd() != null) {
+                //noinspection ConstantConditions
+                System.out.print("~" + Core.getInstance().UserManager().getUser().getCwd().getPath() + " ");
+            } else {
+                System.out.print("> ");
+            }
         }
     }
 }
