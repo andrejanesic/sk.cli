@@ -270,7 +270,7 @@ public class Main {
                     case "nodeAdd":
                         // #TODO
                         break;
-                    case "del": {
+                    case "rm": {
                         if (args.length < 2) {
                             System.out.println("These arguments are required: \"path\".");
                             break;
@@ -284,9 +284,17 @@ public class Main {
                     case "nodeDownload":
                         // #TODO
                         break;
-                    case "nodeMove":
-                        // #TODO
+                    case "mv": {
+                        if (args.length < 3) {
+                            System.out.println("These arguments are required: \"target\", \"dest\".");
+                            break;
+                        }
+                        IAction moveNode = new ActionINodeMove(args[1], args[2]);
+                        am.addAction(moveNode);
+                        am.run();
+                        System.out.println("Node moved.");
                         break;
+                    }
                     case "nodeUpload":
                         // #TODO
                         break;
