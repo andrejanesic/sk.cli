@@ -4,6 +4,7 @@ import com.raf.sk.core.actions.*;
 import com.raf.sk.core.core.Core;
 import com.raf.sk.core.exceptions.*;
 import com.raf.sk.core.repository.Directory;
+import com.raf.sk.core.repository.File;
 import com.raf.sk.core.repository.INode;
 import com.raf.sk.core.repository.INodeType;
 import com.raf.sk.core.repository.limitations.INodeLimitation;
@@ -11,9 +12,7 @@ import com.raf.sk.core.repository.limitations.INodeLimitationType;
 import com.raf.sk.core.user.IPrivilege;
 import com.raf.sk.core.user.IUser;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Scanner;
+import java.util.*;
 
 /**
  * Klasa za glavni tok programa.
@@ -238,22 +237,75 @@ public class Main {
                             actionListDirectory = new ActionListDirectory(".");
                         else
                             actionListDirectory = new ActionListDirectory(args[1]);
+
+                        boolean showFiles = false, showDirs = false, recursive = false;
+                        int sortMode = 1;
+                        if (args.length == 1 || args.length == 2) {
+                            showFiles = showDirs = true;
+                        }
+                        for (int i = 2; i < args.length; i++) {
+                            String t = args[i];
+                            if (t.equals("--files")) showFiles = true;
+                            if (t.equals("--dirs")) showDirs = true;
+                            if (t.equals("--rec")) recursive = true;
+                            if (t.equals("--sortAsc")) sortMode = 1;
+                            if (t.equals("--sortDesc")) sortMode = -1;
+                        }
+
                         am.addAction(actionListDirectory);
                         INode n = (INode) am.run();
-                        if (n.getType().equals(INodeType.DIRECTORY)) {
-                            if (((Directory) n).getChildren().size() == 0) {
-                                System.out.println("Empty directory.");
-                                break;
-                            }
-                            for (INode c : ((Directory) n).getChildren()) {
-                                System.out.print(c.getName());
-                                if (c.getType().equals(INodeType.DIRECTORY))
-                                    System.out.print("/");
-                                System.out.print("\n");
-                            }
+
+                        List<Directory> directories = new ArrayList<>();
+                        List<File> files = new ArrayList<>();
+
+                        if (recursive) {
+                            walk(((Directory) n), new Callback() {
+                                @Override
+                                public void exec(INode i) {
+                                    if (i.getType().equals(INodeType.DIRECTORY)) {
+                                        directories.add(((Directory) i));
+                                    } else {
+                                        files.add(((File) i));
+                                    }
+                                }
+                            });
                         } else {
-                            System.out.println(n.getName());
+                            for (INode c : ((Directory) n).getChildren()) {
+                                if (c.getType().equals(INodeType.DIRECTORY)) {
+                                    directories.add(((Directory) c));
+                                } else {
+                                    files.add(((File) c));
+                                }
+                            }
                         }
+
+                        if (directories.size() == 0 && files.size() == 0) {
+                            System.out.println("Empty directory.");
+                            break;
+                        }
+
+                        int finalSortMode = sortMode;
+                        directories.sort(new Comparator<Directory>() {
+                            @Override
+                            public int compare(Directory o1, Directory o2) {
+                                return o1.getName().compareTo(o2.getName()) * finalSortMode;
+                            }
+                        });
+
+                        files.sort(new Comparator<File>() {
+                            @Override
+                            public int compare(File o1, File o2) {
+                                return o1.getName().compareTo(o2.getName()) * finalSortMode;
+                            }
+                        });
+                        if (showDirs)
+                            for (Directory d : directories) {
+                                System.out.println(d.getName() + "/");
+                            }
+                        if (showFiles)
+                            for (File f : files) {
+                                System.out.println(f.getName());
+                            }
                         break;
                     }
 
@@ -509,5 +561,34 @@ public class Main {
                 System.out.print("> ");
             }
         }
+    }
+
+    /**
+     * Prolazi kroz direktorijum rekurzivno.
+     *
+     * @param d Direktorijum kroz koji treba proći.
+     */
+    private static void walk(Directory d, Callback cb) {
+        cb.exec(d);
+        for(INode c : d.getChildren()) {
+            if (c.getType().equals(INodeType.DIRECTORY)) {
+                walk((Directory) c, cb);
+            } else {
+                cb.exec(c);
+            }
+        }
+    }
+
+    /**
+     * Interfejs za prolazak kroz {@link #walk(Directory, Callback)} metodu.
+     */
+    private interface Callback {
+
+        /**
+         * Callback funkcija.
+         *
+         * @param i Trenutni INode.
+         */
+        void exec(INode i);
     }
 }
