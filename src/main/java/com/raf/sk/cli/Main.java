@@ -6,9 +6,12 @@ import com.raf.sk.core.exceptions.*;
 import com.raf.sk.core.repository.Directory;
 import com.raf.sk.core.repository.INode;
 import com.raf.sk.core.repository.INodeType;
+import com.raf.sk.core.repository.limitations.INodeLimitation;
+import com.raf.sk.core.repository.limitations.INodeLimitationType;
 import com.raf.sk.core.user.IPrivilege;
 import com.raf.sk.core.user.IUser;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Scanner;
 
@@ -318,18 +321,113 @@ public class Main {
 
                     /* --- LIMITS --- */
 
-                    case "addLimit":
-                        // #TODO
+                    case "limit": {
+                        if (args.length < 4) {
+                            System.out.println("These arguments are required: \"path\", \"type\", \"limit\".");
+                            break;
+                        }
+                        IAction addLimit;
+                        if (args[2].equals(INodeLimitationType.MAX_SIZE.toString())) {
+                            long max;
+                            try {
+                                max = Long.parseLong(args[3]);
+                            } catch (Exception e) {
+                                System.out.println(INodeLimitationType.MAX_SIZE.toString() +
+                                        " limitation requires a valid \"limit\" long.");
+                                break;
+                            }
+                            addLimit = new ActionAddLimit(args[1], args[2], max);
+                        } else if (args[2].equals(INodeLimitationType.MAX_FILE_COUNT.toString())) {
+                            long count;
+                            try {
+                                count = Long.parseLong(args[3]);
+                            } catch (Exception e) {
+                                System.out.println(INodeLimitationType.MAX_FILE_COUNT.toString() +
+                                        " limitation requires a valid \"limit\" long.");
+                                break;
+                            }
+                            addLimit = new ActionAddLimit(args[1], args[2], count);
+                        } else if (args[2].equals(INodeLimitationType.BLACKLIST_EXT.toString())) {
+                            addLimit = new ActionAddLimit(args[1], args[2], args[3]);
+                        } else {
+                            System.out.println("Invalid limitation type.");
+                            break;
+                        }
+                        am.addAction(addLimit);
+                        am.run();
+                        System.out.println("Limitation added.");
+                        break;
+                    }
+
+                    case "unlimit":
+                        if (args.length < 4) {
+                            System.out.println("These arguments are required: \"path\", \"type\", \"limit\".");
+                            break;
+                        }
+                        IAction deleteLimit;
+                        if (args[2].equals(INodeLimitationType.MAX_SIZE.toString())) {
+                            long max;
+                            try {
+                                max = Long.parseLong(args[3]);
+                            } catch (Exception e) {
+                                System.out.println(INodeLimitationType.MAX_SIZE.toString() +
+                                        " limitation requires a valid \"limit\" long.");
+                                break;
+                            }
+                            deleteLimit = new ActionDeleteLimit(args[1], args[2], max);
+                        } else if (args[2].equals(INodeLimitationType.MAX_FILE_COUNT.toString())) {
+                            long count;
+                            try {
+                                count = Long.parseLong(args[3]);
+                            } catch (Exception e) {
+                                System.out.println(INodeLimitationType.MAX_FILE_COUNT.toString() +
+                                        " limitation requires a valid \"limit\" long.");
+                                break;
+                            }
+                            deleteLimit = new ActionDeleteLimit(args[1], args[2], count);
+                        } else if (args[2].equals(INodeLimitationType.BLACKLIST_EXT.toString())) {
+                            deleteLimit = new ActionDeleteLimit(args[1], args[2], args[3]);
+                        } else {
+                            System.out.println("Invalid limitation type.");
+                            break;
+                        }
+                        am.addAction(deleteLimit);
+                        am.run();
+                        System.out.println("Limitation removed.");
                         break;
 
-                    case "deleteLimit":
-                        // #TODO
-                        break;
-                    case "deleteUser":
-                        // #TODO
-                        break;
-                    case "getLimits":
-                        // #TODO
+                    case "limits":
+                        String path;
+                        if (args.length < 2) {
+                            path = ".";
+                        } else {
+                            path = args[1];
+                        }
+                        IAction getLimits = new ActionGetLimits(path);
+                        am.addAction(getLimits);
+                        Collection<INodeLimitation> limitations = null;
+                        try {
+                            limitations = (Collection<INodeLimitation>) am.run();
+                        } catch (ClassCastException cce) {
+                            System.out.println("PROGRAMMING ERROR: am.run() returned non-Collection<INodeLimitation> " +
+                                    "type of object!");
+                            System.exit(0);
+                        }
+                        if (limitations == null) break;
+
+                        if (limitations.size() == 0) {
+                            System.out.println("No limitations.");
+                        } else {
+                            for (INodeLimitation l : limitations) {
+                                try {
+                                    System.out.println(l.getType() + ": " + Arrays.toString((Object[]) l.getArgs()));
+                                } catch (ClassCastException cce) {
+                                    System.out.println("PROGRAMMING ERROR: am.run() returned non-Collection<INodeLimitation> " +
+                                            "type of object!");
+                                    System.exit(0);
+                                }
+                            }
+                        }
                         break;
 
                     /* --- OTHER --- */
@@ -389,7 +487,9 @@ public class Main {
                             IActionBadParameterException |
                             IUserCannotDeleteCurrentUserException |
                             IUserDuplicateUsernameException |
-                            DirectoryInvalidPathException
+                            DirectoryInvalidPathException |
+                            INodeUnsupportedOperationException |
+                            INodeFatalException
                             e) {
                 System.out.println("Error: " + e.getMessage());
             } catch (Throwable t) {
