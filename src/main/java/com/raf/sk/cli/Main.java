@@ -34,7 +34,7 @@ public class Main {
                 if (i + 1 < argv.length) {
                     if (argv[i + 1].equals("local")) {
                         driver = DriverTypes.LOCAL;
-                    } else if (argv[i + 1].equals("google")) {
+                    } else if (argv[i + 1].equals("remote")) {
                         driver = DriverTypes.GOOGLE;
                     } else {
                         driver = null;
@@ -53,7 +53,7 @@ public class Main {
                 // #TODO zašto je ovo u default paketu?
                 Class.forName("com.raf.sk.localImplementation.LocalImplementation");
             } else {
-                Class.forName("com.raf.sk.RemoteImplementation.RemoteImplementation");
+                Class.forName("com.raf.sk.remoteImplementation.RemoteImplementation");
             }
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
